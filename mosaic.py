@@ -17,6 +17,18 @@ GoalImage="target.jpg"
 #出力の名前
 OutputImage="output.jpg"
 
+#動画
+OutputMovie="movie.mp4"
+
+#動画のフレームレート
+Framerate=25
+
+#動画フォーマット
+fourcc="mp4v"
+
+#フレームスキップ
+FrameSkip=100
+
 #素材画像の色の平均値を出す時に色を取得する間隔
 PickInterval=(1,1)
 
@@ -53,9 +65,10 @@ def ColorChange(img,col,Avg):
 	b=b.point(lambda x: x+ds[2] if 0 <= x+ds[2] and x+ds[2] < 256 else 0 if x+ds[2] < 0 else 255)
 	return Image.merge("RGB",(r,g,b))
 
-def Mosaic(img,src,count=(100,100),interval=(10,10)):
+def Mosaic(img,src,video=None,count=(100,100),interval=(10,10),FrameSkip=0):
 	#モザイクアートを生成する
 	#img:元画像
+	#dst:動画の保存先
 	#src:モザイクアートに使う画像群
 	#count:x方向,y方向にそれぞれ何個の画像を使うか
 	#split:画像の色平均を取る時に色を取得する間隔
@@ -78,9 +91,11 @@ def Mosaic(img,src,count=(100,100),interval=(10,10)):
 			del SourceImgTemp[r]
 			tempSrc=tempSrc.resize((tileRect[2]-tileRect[0],tileRect[3]-tileRect[1]))
 			Target.paste(tempSrc,(tileRect[0],tileRect[1]))
-			Frame=np.asarray(Target)[:,:,::-1]
-			cv.imshow("",Frame)
-			cv.waitKey(1)
+			if((y*count[0]+x)%(FrameSkip+1)==0 and type(video)==cv.VideoWriter):
+				Frame=np.array(Target)[:,:,::-1]
+				video.write(Frame)
+				#cv.imshow("",Frame)
+				#cv.waitKey(1)
 	print("%s:モザイクアートを生成完了"%(str(time.time()-startTime)))
 	return Target
 
@@ -92,4 +107,7 @@ if __name__=="__main__":
 	src=[Image.open(SourceDir+i).resize(SourceImageSize) for i in Res]
 	target=Image.open(GoalImage)
 	target=target.resize(tuple(math.floor(i*TargetZoom) for i in target.size))
-	Mosaic(target,src,interval=PickInterval,count=TileCount).save(OutputImage)
+	fourcc2=cv.VideoWriter.fourcc(*fourcc)
+	v=cv.VideoWriter(OutputMovie,int(fourcc2),Framerate,target.size)
+	Mosaic(target,src,video=v,interval=PickInterval,count=TileCount,FrameSkip=FrameSkip).save(OutputImage)
+	v.release()
