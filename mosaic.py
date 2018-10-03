@@ -4,6 +4,8 @@ import os
 import random
 import math
 import time
+import cv2 as cv
+import numpy as np
 
 #==============設定===================
 #素材画像の入っているフォルダ
@@ -25,7 +27,7 @@ SourceImageSize=(100,100)
 TileCount=(100,100)
 
 #ターゲット画像の倍率
-TargetZoom=1
+TargetZoom=5
 #=====================================
 
 
@@ -57,6 +59,7 @@ def Mosaic(img,src,count=(100,100),interval=(10,10)):
 	#src:モザイクアートに使う画像群
 	#count:x方向,y方向にそれぞれ何個の画像を使うか
 	#split:画像の色平均を取る時に色を取得する間隔
+	
 	Target=Image.new("RGB",img.size)
 	print("%s:各素材グラフィックの色平均値を導出開始"%(str(time.time()-startTime)))
 	SourceImg=[(i,ColorAvg(i,interval)) for i in src]
@@ -75,7 +78,9 @@ def Mosaic(img,src,count=(100,100),interval=(10,10)):
 			del SourceImgTemp[r]
 			tempSrc=tempSrc.resize((tileRect[2]-tileRect[0],tileRect[3]-tileRect[1]))
 			Target.paste(tempSrc,(tileRect[0],tileRect[1]))
-			
+			Frame=np.asarray(Target)[:,:,::-1]
+			cv.imshow("",Frame)
+			cv.waitKey(1)
 	print("%s:モザイクアートを生成完了"%(str(time.time()-startTime)))
 	return Target
 
