@@ -12,7 +12,7 @@ import numpy as np
 SourceDir=os.getcwd()+"/source/"
 
 #目標となる画像
-GoalImage="target.jpg"
+GoalImage=os.getcwd()+"/source/13.jpg"
 
 #出力の名前
 OutputImage="output.jpg"
@@ -27,7 +27,7 @@ Framerate=25
 fourcc="mp4v"
 
 #フレームスキップ
-FrameSkip=100
+FrameSkip=30
 
 #素材画像の色の平均値を出す時に色を取得する間隔
 PickInterval=(1,1)
@@ -77,25 +77,39 @@ def Mosaic(img,src,video=None,count=(100,100),interval=(10,10),FrameSkip=0):
 	print("%s:各素材グラフィックの色平均値を導出開始"%(str(time.time()-startTime)))
 	SourceImg=[(i,ColorAvg(i,interval)) for i in src]
 	SourceImgTemp=[]
-	print("%s:各素材グラフィックの色平均値を導出終了"%(str(time.time()-startTime)))
-	print("%s:モザイクアートを生成開始"%(time.time()-startTime))
+	print("%s:各素材グラフィックの色平均値を導出完了"%(str(time.time()-startTime)))
+	print("%s:タイルリストを生成開始"%(str(time.time()-startTime)))
+	RectList=[]
 	for y in range(0,count[1]):
 		for x in range(0,count[0]):
 			tileRect=(x*img.size[0]/count[0],y*img.size[1]/count[1],(x+1)*img.size[0]/count[0],(y+1)*img.size[1]/count[1])
 			tileRect=tuple(math.floor(i) for i in tileRect)
-			Pivot=img.getpixel((math.floor((tileRect[0]+tileRect[2])/2),math.floor((tileRect[1]+tileRect[3])/2)))
-			if(len(SourceImgTemp)==0):
-				SourceImgTemp=SourceImg.copy()
-			r=random.randrange(len(SourceImgTemp))
-			tempSrc=ColorChange(SourceImgTemp[r][0],Pivot,SourceImgTemp[r][1])
-			del SourceImgTemp[r]
-			tempSrc=tempSrc.resize((tileRect[2]-tileRect[0],tileRect[3]-tileRect[1]))
-			Target.paste(tempSrc,(tileRect[0],tileRect[1]))
-			if((y*count[0]+x)%(FrameSkip+1)==0 and type(video)==cv.VideoWriter):
-				Frame=np.array(Target)[:,:,::-1]
-				video.write(Frame)
-				#cv.imshow("",Frame)
-				#cv.waitKey(1)
+			RectList.append(tileRect)
+	print("%s:タイルリストを生成完了"%(str(time.time()-startTime)))
+	print("%s:モザイクアートを生成開始"%(time.time()-startTime))
+	TileCount=0
+	Frame=np.array(Target)[:,:,::-1]
+	video.write(Frame)
+	while(len(RectList)>0):
+		r=random.randrange(len(RectList))
+		tileRect=RectList[r]
+		del RectList[r]
+		Pivot=img.getpixel((math.floor((tileRect[0]+tileRect[2])/2),math.floor((tileRect[1]+tileRect[3])/2)))
+		if(len(SourceImgTemp)==0):
+			SourceImgTemp=SourceImg.copy()
+		r=random.randrange(len(SourceImgTemp))
+		tempSrc=ColorChange(SourceImgTemp[r][0],Pivot,SourceImgTemp[r][1])
+		del SourceImgTemp[r]
+		tempSrc=tempSrc.resize((tileRect[2]-tileRect[0],tileRect[3]-tileRect[1]))
+		Target.paste(tempSrc,(tileRect[0],tileRect[1]))
+		if(TileCount%(FrameSkip+1)==0 and type(video)==cv.VideoWriter):
+			Frame=np.array(Target)[:,:,::-1]
+			video.write(Frame)
+			#cv.imshow("",Frame)
+			#cv.waitKey(1)
+		TileCount+=1
+	Frame=np.array(Target)[:,:,::-1]
+	video.write(Frame)
 	print("%s:モザイクアートを生成完了"%(str(time.time()-startTime)))
 	return Target
 
